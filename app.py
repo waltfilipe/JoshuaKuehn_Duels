@@ -184,5 +184,5 @@ with col_vid:
     l_rate = (l_wins / l_total * 100) if l_total > 0 else 0
 
     s_col1, s_col2 = st.columns(2)
-    s_col1.metric("Central Corridor", f"{c_wins}/{c_total}", f"{c_rate:.1f}% Success")
+    s_col1.metric("Central Zone", f"{c_wins}/{c_total}", f"{c_rate:.1f}% Success")
     s_col2.metric("Lateral Zones", f"{l_wins}/{l_total}", f"{l_rate:.1f}% Success")
