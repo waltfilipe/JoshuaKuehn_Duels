@@ -8,23 +8,23 @@ import numpy as np
 from PIL import Image
 from matplotlib.lines import Line2D
 
-# Configuração da página
-st.set_page_config(layout="wide", page_title="Duels Analysis")
+# Page configuration
+st.set_page_config(layout="wide", page_title="Duel Map Analysis")
 
-st.title("Defensive & Duel Map")
-st.caption("Ícones com borda preta e cor forte possuem vídeo. Ícones claros são apenas registro.")
+st.title("Duel Map")
+st.caption("Icons with a black border contain video footage. Click to play.")
 
 # ==========================
 # Data Setup
 # ==========================
-# Lista de tuplas: (Tipo, X, Y, Video_Path ou None)
-eventos_raw = [
+# (Type, X, Y, Video_Path or None)
+events_raw = [
     # -------- GAME 1 --------
     ("DUEL LOST", 97.90, 74.74, None),
-    ("DUEL WON", 58.01, 70.09, "videos/video1.mp4"), # Exemplo com vídeo
+    ("DUEL WON", 58.01, 70.09, "videos/sample1.mp4"), # Example with video
     ("DUEL WON", 61.66, 26.54, None),
     ("DUEL WON", 49.03, 57.12, None),
-    ("DUEL WON", 93.25, 60.11, "videos/video2.mp4"), # Exemplo com vídeo
+    ("DUEL WON", 93.25, 60.11, "videos/sample2.mp4"), # Example with video
     ("DUEL WON", 104.22, 66.60, None),
     ("DUEL WON", 107.71, 77.74, None),
     ("DUEL LOST", 62.33, 66.93, None),
@@ -47,7 +47,7 @@ eventos_raw = [
     ("DUEL WON", 94.74, 75.08, None),
     ("DUEL WON", 63.66, 21.38, None),
     ("DUEL LOST", 81.94, 63.11, None),
-    ("FOULED", 39.55, 39.67, "videos/video3.mp4"), # Exemplo com vídeo
+    ("FOULED", 39.55, 39.67, "videos/sample3.mp4"), # Example with video
     ("DUEL LOST", 51.02, 40.00, None),
     ("DUEL WON", 99.90, 28.86, None),
     ("AERIAL WON", 111.86, 54.79, None),
@@ -66,46 +66,44 @@ eventos_raw = [
     ("DUEL LOST", 77.45, 3.93, None),
 ]
 
-df = pd.DataFrame(eventos_raw, columns=["type", "x", "y", "video"])
+df = pd.DataFrame(events_raw, columns=["type", "x", "y", "video"])
 
 def get_style(event_type, has_video):
-    # Cores base (RGBA)
     colors = {
-        "DUEL LOST": (1, 0, 0),        # Vermelho
-        "DUEL WON": (0, 0.6, 0),       # Verde
-        "AERIAL WON": (0.2, 0.3, 1),   # Azul
-        "AERIAL LOST": (0.8, 0, 0.8),  # Roxo
-        "FOULED": (1, 0.6, 0),         # Laranja
-        "INTERCEPTION": (0.3, 0.3, 0.3) # Cinza
+        "DUEL LOST": (0.9, 0, 0),       # Red
+        "DUEL WON": (0, 0.6, 0),        # Green
+        "AERIAL WON": (0.1, 0.4, 0.9),  # Blue
+        "AERIAL LOST": (0.7, 0, 0.7),   # Purple
+        "FOULED": (1, 0.5, 0),          # Orange
     }
-    
-    # Marcadores
     markers = {
         "DUEL LOST": 'x',
         "DUEL WON": 'o',
         "AERIAL WON": '^',
         "AERIAL LOST": 'v',
         "FOULED": 's',
-        "INTERCEPTION": 'D'
     }
 
     base_color = colors.get(event_type, (0, 0, 0))
     marker = markers.get(event_type, 'o')
     
+    # Linewidth for X markers (Duel Lost)
+    lw = 3.5 if marker == 'x' else 1.0
+    
     if has_video:
-        # Cor forte, opacidade total, borda preta
-        return marker, (*base_color, 1.0), 120, 1.5, 'black'
+        # Brighter, full opacity, black border
+        return marker, (*base_color, 1.0), 110, lw, 'black'
     else:
-        # Cor lavada, semi-transparente, sem borda destacada
-        return marker, (*base_color, 0.3), 80, 0.5, (*base_color, 0.3)
+        # Slightly dimmer, no distinct border
+        return marker, (*base_color, 0.6), 80, lw, (*base_color, 0.1)
 
 # ==========================
-# Layout
+# Visualization
 # ==========================
-col1, col2 = st.columns([1, 1])
+col1, col2 = st.columns([1.2, 1])
 
 with col1:
-    pitch = Pitch(pitch_type='statsbomb', pitch_color='#f5f5f5', line_color='#4a4a4a')
+    pitch = Pitch(pitch_type='statsbomb', pitch_color='#f8f8f8', line_color='#4a4a4a')
     fig, ax = pitch.draw(figsize=(10, 8))
     
     for _, row in df.iterrows():
@@ -115,74 +113,6 @@ with col1:
         pitch.scatter(row.x, row.y, marker=marker, s=size, color=color, 
                       edgecolors=ec, linewidths=lw, ax=ax, zorder=3 if has_vid else 2)
 
-    ax.set_title("Mapa de Duelos e Ações Defensivas", fontsize=16, pad=20)
-
-    # Legenda Customizada
-    legend_elements = [
-        Line2D([0], [0], marker='o', color='w', label='Duel Won', markerfacecolor=(0, 0.6, 0, 1), markersize=10),
-        Line2D([0], [0], marker='x', color='red', label='Duel Lost', markersize=10, linestyle='None'),
-        Line2D([0], [0], marker='^', color='w', label='Aerial Won', markerfacecolor=(0.2, 0.3, 1, 1), markersize=10),
-        Line2D([0], [0], marker='v', color='w', label='Aerial Lost', markerfacecolor=(0.8, 0, 0.8, 1), markersize=10),
-        Line2D([0], [0], marker='s', color='w', label='Fouled', markerfacecolor=(1, 0.6, 0, 1), markersize=10),
-    ]
-    
-    ax.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(0.02, 0.98), 
-              frameon=True, fontsize='small', edgecolor='black', facecolor='white')
-
-    # Renderização para clique
-    buf = BytesIO()
-    plt.savefig(buf, format="png", dpi=100, bbox_inches='tight')
-    buf.seek(0)
-    image = Image.open(buf)
-    
-    click = streamlit_image_coordinates(image, width=800)
-
-# ==========================
-# Lógica de Seleção
-# ==========================
-selected_event = None
-
-if click is not None:
-    real_w, real_h = image.size
-    disp_w, disp_h = click["width"], click["height"]
-    
-    pixel_x = click["x"] * (real_w / disp_w)
-    pixel_y = click["y"] * (real_h / disp_h)
-    
-    mpl_pixel_y = real_h - pixel_y
-    coords = ax.transData.inverted().transform((pixel_x, mpl_pixel_y))
-    field_x, field_y = coords[0], coords[1]
-
-    df["dist"] = np.sqrt((df["x"] - field_x)**2 + (df["y"] - field_y)**2)
-    
-    # Busca o evento mais próximo dentro de um raio
-    RADIUS = 4 
-    candidates = df[df["dist"] < RADIUS]
-
-    if not candidates.empty:
-        # Prioriza o mais próximo que TENHA vídeo, se houver
-        with_video = candidates[candidates["video"].notnull()]
-        if not with_video.empty:
-            selected_event = with_video.loc[with_video["dist"].idxmin()]
-        else:
-            selected_event = candidates.loc[candidates["dist"].idxmin()]
-
-# ==========================
-# Video Player (Direita)
-# ==========================
-with col2:
-    st.subheader("Análise de Vídeo")
-    if selected_event is not None:
-        st.info(f"**Evento Selecionado:** {selected_event['type']}")
-        
-        if selected_event["video"]:
-            try:
-                st.video(selected_event["video"])
-            except:
-                st.error("Arquivo de vídeo não encontrado no caminho especificado.")
-        else:
-            st.warning("Este evento não possui vídeo disponível.")
-    else:
-        st.write("---")
-        st.info("Clique em um ícone no mapa para carregar o vídeo correspondente.")
-        st.write("Apenas ícones com contorno preto possuem vídeos vinculados.")
+    # Attack Direction (Bottom)
+    ax.annotate('', xy=(80, 84), xytext=(40, 84),
+                arrowprops=dict(arrowstyle='->', color
