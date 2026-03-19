@@ -58,7 +58,7 @@ events_raw = [
     ("FOULED", 60.17, 54.46, None), 
     ("DUEL WON", 59.67, 44.32, None),
     ("DUEL LOST", 85.93, 75.24, None), 
-    ("AERIAL WON", 109.70, 44.16, "videos/Duelo Aereo 6.mp4"),
+    ("AERIAL WON", 109.70, 46.16, "videos/Duelo Aereo 6.mp4"),
     ("DUEL LOST", 48.70, 2.93, None), 
     ("DUEL WON", 59.00, 21.05, "videos/Duel Won 3.mp4"),
     ("DUEL LOST", 92.08, 61.61, None), 
