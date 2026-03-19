@@ -115,4 +115,71 @@ with col1:
 
     # Attack Direction (Bottom)
     ax.annotate('', xy=(80, 84), xytext=(40, 84),
-                arrowprops=dict(arrowstyle='->', color
+                arrowprops=dict(arrowstyle='->', color='#4a4a4a', lw=1.5), clip_on=False)
+    ax.text(60, 87, "ATTACK DIRECTION", ha='center', va='center', 
+            fontsize=9, color='#4a4a4a', fontweight='bold')
+
+    # Legend
+    legend_elements = [
+        Line2D([0], [0], marker='o', color='w', label='Duel Won', markerfacecolor=(0, 0.6, 0, 0.8), markersize=9),
+        Line2D([0], [0], marker='x', color=(0.9, 0, 0), label='Duel Lost', markersize=9, markeredgewidth=2.5),
+        Line2D([0], [0], marker='^', color='w', label='Aerial Won', markerfacecolor=(0.1, 0.4, 0.9, 0.8), markersize=9),
+        Line2D([0], [0], marker='v', color='w', label='Aerial Lost', markerfacecolor=(0.7, 0, 0.7, 0.8), markersize=9),
+        Line2D([0], [0], marker='s', color='w', label='Fouled', markerfacecolor=(1, 0.5, 0, 0.8), markersize=9),
+    ]
+    ax.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(0.01, 0.99), 
+              frameon=True, fontsize='small', edgecolor='#cccccc')
+
+    buf = BytesIO()
+    plt.savefig(buf, format="png", dpi=120, bbox_inches='tight')
+    buf.seek(0)
+    image = Image.open(buf)
+    
+    click = streamlit_image_coordinates(image, width=850)
+
+# ==========================
+# Interaction Logic
+# ==========================
+selected_event = None
+
+if click is not None:
+    real_w, real_h = image.size
+    disp_w, disp_h = click["width"], click["height"]
+    
+    pixel_x = click["x"] * (real_w / disp_w)
+    pixel_y = click["y"] * (real_h / disp_h)
+    
+    mpl_pixel_y = real_h - pixel_y
+    coords = ax.transData.inverted().transform((pixel_x, mpl_pixel_y))
+    field_x, field_y = coords[0], coords[1]
+
+    df["dist"] = np.sqrt((df["x"] - field_x)**2 + (df["y"] - field_y)**2)
+    
+    RADIUS = 4 
+    candidates = df[df["dist"] < RADIUS]
+
+    if not candidates.empty:
+        # Prioritize video events if click is near multiple markers
+        with_video = candidates[candidates["video"].notnull()]
+        if not with_video.empty:
+            selected_event = with_video.loc[with_video["dist"].idxmin()]
+        else:
+            selected_event = candidates.loc[candidates["dist"].idxmin()]
+
+# ==========================
+# UI / Video Player
+# ==========================
+with col2:
+    st.subheader("Video Analysis")
+    if selected_event is not None:
+        st.success(f"**Event Type:** {selected_event['type']}")
+        
+        if selected_event["video"]:
+            try:
+                st.video(selected_event["video"])
+            except:
+                st.error("Video file not found. Please check the file path.")
+        else:
+            st.warning("No video available for this specific event.")
+    else:
+        st.info("Select a marker on the map to view details.")
