@@ -50,7 +50,7 @@ events_raw = [
     ("FOULED", 39.55, 39.67, None), 
     ("DUEL LOST", 51.02, 40.00, "videos/Duel Lost 6.mp4"),
     ("DUEL WON", 99.90, 28.86, None), 
-    ("AERIAL WON", 111.86, 54.79, "videos/Duelo Aereo 2.mp4"),
+    ("AERIAL WON", 111.86, 54.79, "videos/Duelo Aéreo 2.mp4"),
     ("DUEL LOST", 89.26, 56.79, None), 
     ("AERIAL WON", 98.90, 31.69, "videos/Duelo Aereo 3.mp4"),
     ("AERIAL WON", 65.65, 27.70, "videos/Duelo Aereo 4.mp4"), 
@@ -118,12 +118,47 @@ with col_map:
         fontsize=8, color='#4a4a4a', fontweight='bold')
     # Legend
     legend_elements = [
-        Line2D([0], [0], marker='o', color='w', label='Won', markerfacecolor=(0, 0.6, 0, 0.8), markersize=8),
-        Line2D([0], [0], marker='x', color=(0.9, 0, 0, 0.8), label='Lost', markersize=8, markeredgewidth=2),
-        Line2D([0], [0], marker='s', color='w', label='Fouled', markerfacecolor=(1, 0.5, 0, 0.8), markersize=8),
-        Line2D([0], [0], marker='o', color='w', label='Has Video', markerfacecolor='none', markeredgecolor='black', markersize=8),
-    ]
-    ax.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(0.01, 0.99), frameon=True, fontsize='small')
+    # --- Seção de Duelos Terrestres ---
+    Line2D([0], [0], marker='o', color='w', label='Duel Won', 
+           markerfacecolor=(0, 0.6, 0, 0.8), markersize=10, linestyle='None'),
+    
+    Line2D([0], [0], marker='x', color='w', label='Duel Lost', 
+           markeredgecolor=(0.9, 0, 0, 0.8), markersize=10, markeredgewidth=2, linestyle='None'),
+
+    # --- Seção de Duelos Aéreos ---
+    Line2D([0], [0], marker='^', color='w', label='Aerial Won', 
+           markerfacecolor=(0.2, 0.9, 0.2, 0.9), markersize=10, linestyle='None'),
+    
+    Line2D([0], [0], marker='v', color='w', label='Aerial Lost', 
+           markerfacecolor=(0.7, 0, 0, 0.8), markersize=10, linestyle='None'),
+
+    # --- Outros ---
+    Line2D([0], [0], marker='s', color='w', label='Fouled', 
+           markerfacecolor=(1, 0.5, 0, 0.8), markersize=10, linestyle='None'),
+    
+    # Indicador de vídeo (Apenas borda branca para destacar no fundo preto se necessário, 
+    # ou borda preta se estiver dentro do box branco)
+    Line2D([0], [0], marker='o', color='w', label='Has Video (High Opacity)', 
+           markerfacecolor='none', markeredgecolor='black', markersize=10, linestyle='None'),
+]
+
+    # Aplicando a legenda ao gráfico
+    legend = ax.legend(
+        handles=legend_elements, 
+        loc='upper left', 
+        bbox_to_anchor=(0.01, 0.99), 
+        frameon=True, 
+        facecolor='white',      # Fundo branco para contraste
+        edgecolor='#333333',    # Borda cinza escuro discreta
+        fontsize='small',
+        title="Match Events",   # Título da legenda
+        title_fontsize='medium',
+        labelspacing=1.0,       # Espaço vertical entre itens
+        borderpad=1.0           # Espaço entre o texto e a borda do box
+    )
+    
+    # Deixar o título da legenda em negrito
+    legend.get_title().set_fontweight('bold')
 
     # Convert plot to image for coordinate tracking
     buf = BytesIO()
