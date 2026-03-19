@@ -37,7 +37,7 @@ events_raw = [
     ("DUEL LOST", 108.21, 25.54, None),
     ("DUEL WON", 59.50, 45.65, None), 
     ("DUEL LOST", 98.07, 37.67, "videos/Duel Lost 2.mp4"),
-    ("AERIAL WON", 71.97, 22.71, None), 
+    ("AERIAL WON", 71.97, 22.71, "videos/Duelo Aereo 1.mp4"), 
     ("DUEL LOST", 38.89, 16.56, "videos/Duel Lost 3.mp4"),
     ("DUEL WON", 78.78, 29.19, None),
     # -------- GAME 2 --------
@@ -50,15 +50,15 @@ events_raw = [
     ("FOULED", 39.55, 39.67, None), 
     ("DUEL LOST", 51.02, 40.00, "videos/Duel Lost 6.mp4"),
     ("DUEL WON", 99.90, 28.86, None), 
-    ("AERIAL WON", 111.86, 54.79, None),
+    ("AERIAL WON", 111.86, 54.79, "videos/Duelo Aereo 2.mp4"),
     ("DUEL LOST", 89.26, 56.79, None), 
-    ("AERIAL WON", 98.90, 31.69, None),
-    ("AERIAL WON", 65.65, 27.70, None), 
-    ("AERIAL LOST", 66.32, 4.76, None),
+    ("AERIAL WON", 98.90, 31.69, "videos/Duelo Aereo 3.mp4"),
+    ("AERIAL WON", 65.65, 27.70, "videos/Duelo Aereo 4.mp4"), 
+    ("AERIAL LOST", 66.32, 4.76, "videos/Duelo Aereo 5.mp4"),
     ("FOULED", 60.17, 54.46, None), 
     ("DUEL WON", 59.67, 44.32, None),
     ("DUEL LOST", 85.93, 75.24, None), 
-    ("AERIAL WON", 109.70, 1.10, None),
+    ("AERIAL WON", 109.70, 1.10, "videos/Duelo Aereo 6.mp4"),
     ("DUEL LOST", 48.70, 2.93, None), 
     ("DUEL WON", 59.00, 21.05, "videos/Duel Won 3.mp4"),
     ("DUEL LOST", 92.08, 61.61, None), 
@@ -69,14 +69,29 @@ events_raw = [
 df = pd.DataFrame(events_raw, columns=["type", "x", "y", "video"])
 
 def get_style(event_type, has_video):
+    event_type = event_type.upper() # Garante que a comparação ignore maiúsculas/minúsculas
+    
+    # 1. DUELOS AÉREOS (Prioritário)
+    if "AERIAL" in event_type or "AIR" in event_type:
+        if "WON" in event_type:
+            # Triângulo para cima (Verde limão brilhante)
+            return '^', (0.2, 0.9, 0.2, 0.9), 110, 1.2
+        if "LOST" in event_type:
+            # Triângulo para baixo (Vermelho escuro)
+            alpha = 0.9 if has_video else 0.15
+            return 'v', (0.7, 0, 0, alpha), 110, 1.2
+
+    # 2. DUELOS TERRESTRES / OUTROS
     if "WON" in event_type: 
         return 'o', (0, 0.6, 0, 0.8), 90, 0.5
+    
     if "LOST" in event_type: 
-        # Reduzida a opacidade para 0.2 se não tiver vídeo
         alpha = 0.9 if has_video else 0.15
-        return 'x', (0.9, 0, 0, alpha), 90, 2.5
+        return 'x', (0.9, 0, 0, alpha), 100, 2.5 # Aumentei um pouco o tamanho do 'x'
+    
     if "FOULED" in event_type: 
         return 's', (1, 0.5, 0, 0.8), 90, 0.5
+        
     return 'o', (0.5, 0.5, 0.5, 0.8), 90, 0.5
 
 # ==========================
