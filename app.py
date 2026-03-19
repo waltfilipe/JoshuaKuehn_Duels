@@ -146,4 +146,5 @@ with col_vid:
         subset = df[(df["zone"] == zone) & (df["is_duel"])]
         total = len(subset)
         won = subset["won"].sum()
-        pct = (won /
+        pct = (won / total * 100) if total > 0 else 0
+        col.metric(f"{zone} ZONES", f"{int(won)}/{total}", f"{pct:.1f}% Success")
