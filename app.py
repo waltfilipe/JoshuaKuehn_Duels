@@ -96,7 +96,11 @@ with col_map:
         ec = 'black' if has_vid else color
         pitch.scatter(row.x, row.y, marker=marker, s=size, color=color, 
                       edgecolors=ec, linewidths=lw, ax=ax, zorder=3)
-
+    # Attack Arrow
+    ax.annotate('', xy=(70, 83), xytext=(50, 83),
+        arrowprops=dict(arrowstyle='->', color='#4a4a4a', lw=1.2))
+    ax.text(60, 86, "Attack Direction", ha='center', va='center', 
+        fontsize=8, color='#4a4a4a', fontweight='bold')
     # Legend
     legend_elements = [
         Line2D([0], [0], marker='o', color='w', label='Won', markerfacecolor=(0, 0.6, 0, 0.8), markersize=8),
