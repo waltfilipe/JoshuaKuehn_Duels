@@ -46,23 +46,10 @@ events_raw = [
 
 df = pd.DataFrame(events_raw, columns=["type", "x", "y", "video"])
 
-# Zone logic for statistics
+# Stats helper columns
 df["zone"] = df["y"].apply(lambda y: "CENTRAL" if 26.6 < y <= 53.3 else "WIDE")
 df["is_duel"] = df["type"].str.contains("DUEL|AERIAL")
 df["won"] = df["type"].str.contains("WON")
-
-def get_style(event_type, has_video):
-    # Colors
-    colors = {"LOST": (0.9, 0, 0), "WON": (0, 0.6, 0), "FOULED": (1, 0.5, 0)}
-    
-    # Base configuration
-    color = colors.get("WON" if "WON" in event_type else "LOST" if "LOST" in event_type else "FOULED")
-    marker = 'x' if "LOST" in event_type else 's' if "FOULED" in event_type else 'o'
-    
-    if has_video:
-        return marker, (*color, 1.0), 120, 3.0, 'black'  # Thick black border for video
-    else:
-        return marker, (*color, 0.3), 70, 1.0, (*color, 0.3)  # Faded for non-video
 
 # ==========================
 # Main Layout
@@ -70,20 +57,30 @@ def get_style(event_type, has_video):
 col_map, col_vid = st.columns([1.2, 1])
 
 with col_map:
+    st.subheader("Interactive Pitch")
     pitch = Pitch(pitch_type='statsbomb', pitch_color='#f8f8f8', line_color='#4a4a4a')
     fig, ax = pitch.draw(figsize=(10, 8))
     
     for _, row in df.iterrows():
         has_vid = row["video"] is not None
-        marker, color, size, lw, ec = get_style(row["type"], has_vid)
-        pitch.scatter(row.x, row.y, marker=marker, s=size, color=color, 
+        
+        # Style Logic
+        color = (0, 0.6, 0) if "WON" in row["type"] else (0.9, 0, 0) if "LOST" in row["type"] else (1, 0.5, 0)
+        marker = 'x' if "LOST" in row["type"] else 's' if "FOULED" in row["type"] else 'o'
+        
+        if has_vid:
+            alpha, size, lw, ec = 1.0, 130, 3.5, 'black' # Clear, big, black border
+        else:
+            alpha, size, lw, ec = 0.2, 70, 1.0, (*color, 0.2) # Faded, small, no border
+            
+        pitch.scatter(row.x, row.y, marker=marker, s=size, color=(*color, alpha), 
                       edgecolors=ec, linewidths=lw, ax=ax, zorder=4 if has_vid else 2)
 
     # Legend
     legend_elements = [
         Line2D([0], [0], marker='o', color='w', label='Won', markerfacecolor=(0, 0.6, 0, 0.8), markersize=9),
-        Line2D([0], [0], marker='x', color=(0.9, 0, 0), label='Lost', markersize=9, markeredgewidth=2),
-        Line2D([0], [0], marker='o', color='w', label='Has Video', markerfacecolor='none', markeredgecolor='black', markeredgewidth=2, markersize=10),
+        Line2D([0], [0], marker='x', color=(0.9, 0, 0, 0.8), label='Lost', markersize=9, markeredgewidth=2),
+        Line2D([0], [0], marker='o', color='w', label='Video Clip', markerfacecolor='none', markeredgecolor='black', markeredgewidth=2, markersize=10),
     ]
     ax.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(0.01, 0.99), frameon=True, fontsize='small')
 
@@ -92,57 +89,61 @@ with col_map:
     buf.seek(0)
     img_obj = Image.open(buf)
     
-    click = streamlit_image_coordinates(img_obj, width=750)
+    # FIXED WIDTH is key for coordinate consistency
+    click = streamlit_image_coordinates(img_obj, width=800)
 
 # ==========================
-# Interaction Logic
+# Interaction & Coordinate Logic
 # ==========================
 selected_event = None
 if click is not None:
     real_w, real_h = img_obj.size
     disp_w, disp_h = click["width"], click["height"]
-    pixel_x, pixel_y = click["x"] * (real_w / disp_w), click["y"] * (real_h / disp_h)
     
+    pixel_x = click["x"] * (real_w / disp_w)
+    pixel_y = click["y"] * (real_h / disp_h)
+    
+    # Map pixel to Pitch Data
     mpl_pixel_y = real_h - pixel_y
     coords = ax.transData.inverted().transform((pixel_x, mpl_pixel_y))
     field_x, field_y = coords[0], coords[1]
 
+    # Calculate distance to markers
     df["dist"] = np.sqrt((df["x"] - field_x)**2 + (df["y"] - field_y)**2)
-    RADIUS = 4 
+    
+    # Tolerance radius
+    RADIUS = 5 
     candidates = df[df["dist"] < RADIUS]
 
     if not candidates.empty:
-        # Prioritize video markers if multiple are close
+        # Prioritize markers with videos if click is near multiple
         vids = candidates[candidates["video"].notnull()]
         selected_event = vids.loc[vids["dist"].idxmin()] if not vids.empty else candidates.loc[candidates["dist"].idxmin()]
 
 # ==========================
-# Video & Statistics
+# Video & Statistics (Right Side)
 # ==========================
 with col_vid:
     st.subheader("Video Analysis")
     if selected_event is not None:
-        st.success(f"**Event:** {selected_event['type']}")
+        st.success(f"**Type:** {selected_event['type']}")
         if selected_event["video"]:
-            try: st.video(selected_event["video"])
-            except: st.error("Video file not found.")
-        else: st.warning("No video available.")
+            try:
+                # Force video display
+                st.video(selected_event["video"])
+            except Exception as e:
+                st.error(f"Error loading file: {selected_event['video']}")
+        else:
+            st.warning("No video for this event.")
     else:
-        st.info("Click on a marker with a black border to watch the clip.")
+        st.info("Click a marker with a **black border** to watch the video.")
 
     st.write("---")
-    st.subheader("Duel Statistics by Zone")
+    st.subheader("Duel Stats by Zone")
     
-    stat_col1, stat_col2 = st.columns(2)
-    for zone, col in zip(["CENTRAL", "WIDE"], [stat_col1, stat_col2]):
+    s1, s2 = st.columns(2)
+    for zone, col in zip(["CENTRAL", "WIDE"], [s1, s2]):
         subset = df[(df["zone"] == zone) & (df["is_duel"])]
         total = len(subset)
         won = subset["won"].sum()
-        pct = (won / total * 100) if total > 0 else 0
-        
-        col.metric(
-            label=f"{zone} ZONES", 
-            value=f"{int(won)}/{total}", 
-            delta=f"{pct:.1f}% Success Rate", 
-            delta_color="normal"
-        )
+        pct = (won /
